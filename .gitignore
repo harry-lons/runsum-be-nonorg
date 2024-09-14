@@ -1,4 +1,2 @@
 .env
-
-localhost.crt
-localhost.key
+/venv/

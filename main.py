@@ -31,6 +31,7 @@ def getTokenFromCode():
                                                         CLIENT_SECRET,
                                                         code=code)
     except Exception as e:
+        print( {'type':'ERROR', 'message': str(e)} )
         return {'type':'ERROR', 'message': str(e)}, 500
     
     if 'access_token' in token_response and 'refresh_token' in token_response:
@@ -46,7 +47,7 @@ def refresh_access_token():
     # Get refresh token from HttpOnly cookie
     refresh_token = request.cookies.get('refresh_token')
     if not refresh_token:
-        return jsonify({"error": "No refresh token"}), 450
+        return jsonify({"error": "No refresh token"}), 403
 
     # Request new access token from Strava
     token_data = client.refresh_access_token(CLIENT_ID, CLIENT_SECRET, refresh_token)

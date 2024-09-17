@@ -9,10 +9,12 @@ Flask==3.0.3
 Flask-Cors==5.0.0
 flexcache==0.3
 flexparser==0.3.1
+gunicorn==23.0.0
 idna==3.9
 itsdangerous==2.2.0
 Jinja2==3.1.4
 MarkupSafe==2.1.5
+packaging==24.1
 Pint==0.24.3
 pydantic==2.9.1
 pydantic_core==2.23.3

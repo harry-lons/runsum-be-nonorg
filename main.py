@@ -16,7 +16,9 @@ JWT_SECRET = os.getenv('JWT_SECRET')
 app = Flask(__name__)
 
 # Enable CORS
-CORS(app, resources={r"/*": {"origins": FRONTEND_URL}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": FRONTEND_URL}}, 
+     supports_credentials=True,
+     expose_headers=['Set-Cookie'])
 
 # Flask-JWT-Extended configuration
 app.config['JWT_SECRET_KEY'] = JWT_SECRET
@@ -51,7 +53,7 @@ def get_token_from_code():
             'refresh_token',
             token_response['refresh_token'],
             httponly=True,
-            secure=SECURE,
+            secure=True,
             samesite='None'
         )
         return resp, 200

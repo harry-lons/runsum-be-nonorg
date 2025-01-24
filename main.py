@@ -52,7 +52,7 @@ def get_token_from_code():
             token_response['refresh_token'],
             httponly=True,
             secure=SECURE,
-            samesite='Lax'
+            samesite='None'
         )
         return resp, 200
     else:

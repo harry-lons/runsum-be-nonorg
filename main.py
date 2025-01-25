@@ -82,6 +82,34 @@ def refresh_access_token():
         return jsonify({"access_token": new_access_token})
     else:
         return jsonify({"error": "Failed to refresh access token"}), 400
+    
+@app.route('/logout', methods=['POST'])
+def logout():
+    # Get refresh token from HttpOnly cookie
+    refresh_token = request.cookies.get('refresh_token')
+    if not refresh_token:
+        resp = make_response(
+            jsonify({"success": 'no token to begin with (weird)'})
+        )
+        return resp, 200
+    try:
+        # Set the cookie to empty string
+        resp = make_response(
+            jsonify({"success": 'token removed successfully'})
+        )
+        resp.set_cookie(
+            'refresh_token',
+            '',
+            httponly=True,
+            secure=True,
+            samesite='None',
+            max_age=0       # Forces browser to immediately delete the cookie
+        )
+        return resp, 200
+    except Exception as e:
+        print({'type': 'ERROR', 'message': str(e)})
+        return jsonify({"error": "Failed to logout (an unknown error occurred)"}), 500
+
 
 if __name__ == "__main__":
     app.run(port=3011)

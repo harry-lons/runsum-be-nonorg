@@ -25,7 +25,7 @@ app.config['JWT_SECRET_KEY'] = JWT_SECRET
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=15)
 
 # Strava client
-client = Client()
+auth_client = Client()
 
 @app.route("/")
 def home():
@@ -37,7 +37,7 @@ def get_token_from_code():
     code = data['code']
 
     try:
-        token_response = client.exchange_code_for_token(
+        token_response = auth_client.exchange_code_for_token(
             CLIENT_ID, CLIENT_SECRET, code=code
         )
     except Exception as e:
@@ -69,7 +69,7 @@ def refresh_access_token():
 
     try:
         # Request a new access token from Strava
-        token_data = client.refresh_access_token(
+        token_data = auth_client.refresh_access_token(
             CLIENT_ID, CLIENT_SECRET, refresh_token
         )
     except Exception as e:
@@ -78,8 +78,11 @@ def refresh_access_token():
 
     if 'access_token' in token_data:
         new_access_token = token_data['access_token']
+        temp_client = Client(access_token=new_access_token)
+        athlete = temp_client.get_athlete()
+        first_name = athlete.firstname if athlete else ""
         # Return the new access token to the frontend
-        return jsonify({"access_token": new_access_token})
+        return jsonify({"access_token": new_access_token, "first_name": first_name})
     else:
         return jsonify({"error": "Failed to refresh access token"}), 400
     

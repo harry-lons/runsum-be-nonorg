@@ -1,8 +1,9 @@
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response, g
 from dotenv import load_dotenv
 from stravalib import Client
 from flask_cors import CORS
 from datetime import datetime, timedelta
+import helpers as h
 import os
 
 # Load environment variables
@@ -31,34 +32,23 @@ auth_client = Client()
 def home():
     return "Hello HTTPS!"
 
-@app.route("/get-token", methods=["POST"])
-def get_token_from_code():
-    data = request.get_json()
-    code = data['code']
-
+@app.route("/auth/authenticate-me")
+def authenticate_me():
     try:
-        token_response = auth_client.exchange_code_for_token(
-            CLIENT_ID, CLIENT_SECRET, code=code
-        )
+        data = request.get_json()
+        code = data['code']
+        # Exchange auth code for access and refresh tokens
+        acc_tok, ref_tok = h.get_token_from_code(auth_client, code, CLIENT_ID=CLIENT_ID, CLIENT_SECRET=CLIENT_SECRET)
+        # Create stravalib client with access token to fetch athlete info
+        temp_client = Client(access_token=acc_tok)
+        athlete = temp_client.get_athlete()
+
+        athlete = temp_client.get_athlete() # Get John's full athlete record
+        print("Hello, {}. I know your email is {}".format(athlete.firstname, athlete.email))
+    
     except Exception as e:
         print({'type': 'ERROR', 'message': str(e)})
-        return {'type': 'ERROR', 'message': str(e)}, 500
-
-    if 'access_token' in token_response and 'refresh_token' in token_response:
-        # Set HttpOnly cookie for the refresh token
-        resp = make_response(
-            jsonify({"access_token": token_response['access_token']})
-        )
-        resp.set_cookie(
-            'refresh_token',
-            token_response['refresh_token'],
-            httponly=True,
-            secure=True,
-            samesite='None'
-        )
-        return resp, 200
-    else:
-        return jsonify({"error": "Failed to exchange token"}), 400
+        return jsonify({"error": "Failed to authenticate"}), 500
 
 @app.route('/refresh-token', methods=['POST'])
 def refresh_access_token():
@@ -112,6 +102,8 @@ def logout():
     except Exception as e:
         print({'type': 'ERROR', 'message': str(e)})
         return jsonify({"error": "Failed to logout (an unknown error occurred)"}), 500
+    
+
 
 
 if __name__ == "__main__":

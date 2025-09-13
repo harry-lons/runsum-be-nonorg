@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, make_response, g
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from dotenv import load_dotenv
 from stravalib import Client
 from flask_cors import CORS
@@ -23,7 +24,9 @@ CORS(app, resources={r"/*": {"origins": FRONTEND_URL}},
 
 # Flask-JWT-Extended configuration
 app.config['JWT_SECRET_KEY'] = JWT_SECRET
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=15)
+
+jwt = JWTManager(app)
+
 
 # Strava client
 auth_client = Client()
@@ -32,8 +35,13 @@ auth_client = Client()
 def home():
     return "Hello HTTPS!"
 
-@app.route("/auth/authenticate-me")
+###############
+# AUTH ROUTES #
+###############
+
+@app.route("/auth/login", methods=['POST'])
 def authenticate_me():
+
     try:
         data = request.get_json()
         code = data['code']
@@ -43,43 +51,35 @@ def authenticate_me():
         temp_client = Client(access_token=acc_tok)
         athlete = temp_client.get_athlete()
 
-        athlete = temp_client.get_athlete() # Get John's full athlete record
-        print("Hello, {}. I know your email is {}".format(athlete.firstname, athlete.email))
+        athlete = temp_client.get_athlete() # Get user's full athlete record
+        print("Hello, {}. I know your id is {}".format(athlete.firstname, athlete.id))
+
+        # Create JWT token
+        JWT = create_access_token(identity=athlete.id, expires_delta=timedelta(days=30))
+        resp = make_response(
+            jsonify({"first_name": athlete.firstname, "id": athlete.id, "success":True if athlete else ""})
+        )
+        
+        resp.set_cookie(
+            'JWT',
+            JWT,
+            httponly=True,
+            secure=SECURE,
+            samesite='None' if SECURE else 'Lax',
+            max_age=60*60*24*30  # 30 days
+        )
+        # print(SECURE)
+        return resp, 200
+    #     return resp, 200
     
     except Exception as e:
         print({'type': 'ERROR', 'message': str(e)})
         return jsonify({"error": "Failed to authenticate"}), 500
-
-@app.route('/refresh-token', methods=['POST'])
-def refresh_access_token():
-    # Get refresh token from HttpOnly cookie
-    refresh_token = request.cookies.get('refresh_token')
-    if not refresh_token:
-        return jsonify({"error": "No refresh token"}), 403
-
-    try:
-        # Request a new access token from Strava
-        token_data = auth_client.refresh_access_token(
-            CLIENT_ID, CLIENT_SECRET, refresh_token
-        )
-    except Exception as e:
-        print({'type': 'ERROR', 'message': str(e)})
-        return jsonify({"error": "Failed to refresh access token"}), 500
-
-    if 'access_token' in token_data:
-        new_access_token = token_data['access_token']
-        temp_client = Client(access_token=new_access_token)
-        athlete = temp_client.get_athlete()
-        first_name = athlete.firstname if athlete else ""
-        # Return the new access token to the frontend
-        return jsonify({"access_token": new_access_token, "first_name": first_name})
-    else:
-        return jsonify({"error": "Failed to refresh access token"}), 400
     
-@app.route('/logout', methods=['POST'])
+@app.route('/auth/logout', methods=['POST'])
 def logout():
     # Get refresh token from HttpOnly cookie
-    refresh_token = request.cookies.get('refresh_token')
+    refresh_token = request.cookies.get('JWT')
     if not refresh_token:
         resp = make_response(
             jsonify({"success": 'no token to begin with (weird)'})
@@ -91,7 +91,7 @@ def logout():
             jsonify({"success": 'token removed successfully'})
         )
         resp.set_cookie(
-            'refresh_token',
+            'JWT',
             '',
             httponly=True,
             secure=True,
@@ -103,8 +103,16 @@ def logout():
         print({'type': 'ERROR', 'message': str(e)})
         return jsonify({"error": "Failed to logout (an unknown error occurred)"}), 500
     
+@app.route('/auth/whoami', methods=['GET'])
+def who_am_i():
+    return jsonify({"message": "I am a placeholder!"}), 200
 
-
+##############
+# ACTIVITIES #
+##############
+@app.route('/activities', methods=['GET'])
+def get_activities():
+    return jsonify({"message": "I am a placeholder!"}), 200
 
 if __name__ == "__main__":
-    app.run(port=3011)
+    app.run(port=3011, debug=True)

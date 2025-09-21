@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, make_response, g
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, set_access_cookies
 from dotenv import load_dotenv
 from stravalib import Client
 from flask_cors import CORS
@@ -24,9 +24,10 @@ CORS(app, resources={r"/*": {"origins": FRONTEND_URL}},
 
 # Flask-JWT-Extended configuration
 app.config['JWT_SECRET_KEY'] = JWT_SECRET
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config["JWT_COOKIE_SECURE"] = SECURE
 
 jwt = JWTManager(app)
-
 
 # Strava client
 auth_client = Client()
@@ -56,20 +57,21 @@ def authenticate_me():
 
         # Create JWT token
         JWT = create_access_token(identity=athlete.id, expires_delta=timedelta(days=30))
-        resp = make_response(
-            jsonify({"first_name": athlete.firstname, "id": athlete.id, "success":True if athlete else ""})
-        )
+        resp = jsonify({"first_name": athlete.firstname, "id": athlete.id, \
+                        "success":True if athlete else ""})
+
+        set_access_cookies(resp, JWT)
         
-        resp.set_cookie(
-            'JWT',
-            JWT,
-            httponly=True,
-            secure=SECURE,
-            samesite='None' if SECURE else 'Lax',
-            max_age=60*60*24*30  # 30 days
-        )
+        # resp.set_cookie(
+        #     'JWT',
+        #     JWT,
+        #     httponly=True,
+        #     secure=SECURE,
+        #     samesite='None' if SECURE else 'Lax',
+        #     max_age=60*60*24*30  # 30 days
+        # )
         # print(SECURE)
-        return resp, 200
+        return resp
     #     return resp, 200
     
     except Exception as e:
@@ -104,8 +106,15 @@ def logout():
         return jsonify({"error": "Failed to logout (an unknown error occurred)"}), 500
     
 @app.route('/auth/whoami', methods=['GET'])
+@jwt_required()
 def who_am_i():
-    return jsonify({"message": "I am a placeholder!"}), 200
+    user = get_jwt_identity()
+    # TODO: query database to figure out the user's real first name
+    # Authenticate user
+    resp = make_response(
+            jsonify({"first_name": "FIRST NAME", "id": user, "success":True})
+        )
+    return resp, 200
 
 ##############
 # ACTIVITIES #

@@ -2,13 +2,18 @@ import oracledb
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# simple script to test connection to the database
+
+# Load .env from parent directory
+env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(env_path)
+
 # Get database credentials from environment variables
 username = os.getenv('ORACLE_USER', 'ADMIN')  # Default to ADMIN, or set via env var
 password = os.getenv('ORACLE_PASSWORD')  # Must be set as environment variable
 
-# Path to wallet directory
-wallet_location = os.path.join(os.path.dirname(__file__), 'wallet')
+# Path to wallet directory (in parent directory)
+wallet_location = os.path.join(os.path.dirname(__file__), '..', 'wallet')
 wallet_password = os.getenv('WALLET_PASSWORD')
 # TNS name from tnsnames.ora (choose based on your needs)
 # Options: runsum_high, runsum_medium, runsum_low, runsum_tp, runsum_tpurgent

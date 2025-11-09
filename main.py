@@ -12,7 +12,7 @@ load_dotenv()
 CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 FRONTEND_URL = os.getenv('FRONTEND_URL')
-SECURE = os.getenv('SECURE') == 'true' // convert t/f string to boolean
+SECURE = os.getenv('SECURE') == 'true' # convert t/f string to boolean
 JWT_SECRET = os.getenv('JWT_SECRET')
 
 app = Flask(__name__)

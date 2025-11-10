@@ -9,8 +9,15 @@ load_dotenv()
 # Database credentials
 username = os.getenv('ORACLE_USER', 'ADMIN')
 password = os.getenv('ORACLE_PASSWORD')
-# wallet_location is in the parent directory (project root)
-wallet_location = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'wallet')
+
+# Check if running on Render (they provide RENDER env var)
+if os.getenv('RENDER'):
+    # On Render, wallet files are uploaded as Secret Files
+    wallet_location = '/etc/secrets'
+else:
+    # Local development - wallet_location is in the parent directory (project root)
+    wallet_location = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'wallet')
+
 wallet_password = os.getenv('WALLET_PASSWORD', '')
 dsn = "runsum_high"
 

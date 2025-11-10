@@ -18,7 +18,7 @@ import json
 
 # Configuration
 BASE_URL = "http://localhost:3011"
-AUTH_CODE = "da5bf22b6d1853cf35a7f15ca9543120ebb5bf42"  # Replace with your actual auth code from Strava
+AUTH_CODE = "37d07a6d04c03d4eb520f6f1748b823a73e9e5b7"  # Replace with your actual auth code from Strava
 
 # Date range for activities (last 30 days)
 end_date = datetime.now()

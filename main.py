@@ -31,6 +31,18 @@ CORS(app, resources={r"/*": {"origins": FRONTEND_URL}},
      supports_credentials=True,
      expose_headers=['Set-Cookie'])
 
+# Add after_request handler to ensure CORS headers are present on ALL responses (including redirects)
+@app.after_request
+def after_request(response):
+    """Ensure CORS headers are present on all responses, including errors and redirects"""
+    origin = request.headers.get('Origin')
+    if origin == FRONTEND_URL:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,X-CSRF-TOKEN'
+        response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
+    return response
+
 # Flask-JWT-Extended configuration
 app.config['JWT_SECRET_KEY'] = JWT_SECRET
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]

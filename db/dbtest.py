@@ -12,22 +12,15 @@ load_dotenv(env_path)
 username = os.getenv('ORACLE_USER', 'ADMIN')  # Default to ADMIN, or set via env var
 password = os.getenv('ORACLE_PASSWORD')  # Must be set as environment variable
 
-# Path to wallet directory (in parent directory)
-wallet_location = os.path.join(os.path.dirname(__file__), '..', 'wallet')
-wallet_password = os.getenv('WALLET_PASSWORD')
-# TNS name from tnsnames.ora (choose based on your needs)
-# Options: runsum_high, runsum_medium, runsum_low, runsum_tp, runsum_tpurgent
-dsn = "runsum_high"
+# TNS connection string for TLS (one-way) mode - no wallet needed
+dsn = os.getenv('ORACLE_DSN')
 
 try:
-    # Connect using thin mode with wallet
+    # Connect using TLS (one-way) - no wallet needed
     connection = oracledb.connect(
         user=username,
         password=password,
-        dsn=dsn,
-        config_dir=wallet_location,
-        wallet_location=wallet_location,
-        wallet_password=wallet_password
+        dsn=dsn
     )
     
     print("Successfully connected to Oracle Autonomous Database!")

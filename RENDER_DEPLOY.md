@@ -5,7 +5,7 @@ This guide walks you through deploying the Runsum backend to Render's free tier.
 ## Prerequisites
 - GitHub account with this repo pushed
 - Render account (free) at https://render.com
-- Oracle wallet files (locally, NOT in git)
+- Oracle Autonomous Database configured for TLS (not mTLS)
 
 ## Step 1: Create Web Service on Render
 
@@ -19,42 +19,7 @@ This guide walks you through deploying the Runsum backend to Render's free tier.
    - **Start Command**: `gunicorn main:app`
    - **Instance Type**: `Free`
 
-## Step 2: Upload Wallet Files as Secret Files
-
-1. In your Render service dashboard, go to **Environment** → **Secret Files**
-2. Click **Add Secret File** for each wallet file:
-
-   **File 1:**
-   - Filename: `cwallet.sso`
-   - Contents: Upload `wallet/cwallet.sso` from your local machine
-   - Path: `/etc/secrets/wallet/cwallet.sso`
-
-   **File 2:**
-   - Filename: `sqlnet.ora`
-   - Contents: Upload `wallet/sqlnet.ora`
-   - Path: `/etc/secrets/wallet/sqlnet.ora`
-
-   **File 3:**
-   - Filename: `tnsnames.ora`
-   - Contents: Upload `wallet/tnsnames.ora`
-   - Path: `/etc/secrets/wallet/tnsnames.ora`
-
-   **File 4:**
-   - Filename: `ojdbc.properties`
-   - Contents: Upload `wallet/ojdbc.properties`
-   - Path: `/etc/secrets/wallet/ojdbc.properties`
-
-   **File 5 (if you have it):**
-   - Filename: `keystore.jks`
-   - Contents: Upload `wallet/keystore.jks`
-   - Path: `/etc/secrets/wallet/keystore.jks`
-
-   **File 6 (if you have it):**
-   - Filename: `truststore.jks`
-   - Contents: Upload `wallet/truststore.jks`
-   - Path: `/etc/secrets/wallet/truststore.jks`
-
-## Step 3: Set Environment Variables
+## Step 2: Set Environment Variables
 
 In **Environment** → **Environment Variables**, add:
 
@@ -66,19 +31,21 @@ SECURE=true
 JWT_SECRET=your_jwt_secret_key
 ORACLE_USER=ADMIN
 ORACLE_PASSWORD=your_oracle_password
-WALLET_PASSWORD=your_wallet_password
+ORACLE_DSN=(description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.us-sanjose-1.oraclecloud.com))(connect_data=(service_name=gb4d36291b4e17a_runsum_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
 ```
+
+**Note:** Database now uses TLS (one-way) mode - no wallet files needed!
 
 **Important:** Make sure `FRONTEND_URL` matches your actual frontend domain!
 
-## Step 4: Deploy
+## Step 3: Deploy
 
 1. Click **Create Web Service**
 2. Render will automatically build and deploy your app
 3. Watch the logs for any errors
 4. Your app will be available at: `https://runsum-backend.onrender.com` (or your chosen name)
 
-## Step 5: Keep It Awake (Optional)
+## Step 4: Keep It Awake (Optional)
 
 The free tier spins down after 15 minutes of inactivity. To prevent this:
 
@@ -99,9 +66,9 @@ The free tier spins down after 15 minutes of inactivity. To prevent this:
 ## Troubleshooting
 
 ### "Error connecting to database"
-- Check that all wallet files are uploaded correctly
-- Verify `ORACLE_PASSWORD` and `WALLET_PASSWORD` are correct
-- Check that the paths in Secret Files are `/etc/secrets/wallet/filename`
+- Verify `ORACLE_USER` and `ORACLE_PASSWORD` are correct
+- Check that `ORACLE_DSN` is properly formatted and matches your database
+- Ensure your Oracle database is configured for TLS (not mTLS) access
 
 ### "ModuleNotFoundError"
 - Make sure `requirements.txt` is up to date

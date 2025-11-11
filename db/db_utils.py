@@ -10,27 +10,18 @@ load_dotenv()
 username = os.getenv('ORACLE_USER', 'ADMIN')
 password = os.getenv('ORACLE_PASSWORD')
 
-# Check if running on Render (they provide RENDER env var)
-if os.getenv('RENDER'):
-    # On Render, wallet files are uploaded as Secret Files
-    wallet_location = '/etc/secrets'
-else:
-    # Local development - wallet_location is in the parent directory (project root)
-    wallet_location = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'wallet')
-
-wallet_password = os.getenv('WALLET_PASSWORD', '')
-dsn = "runsum_high"
+# TNS connection string for TLS (one-way) mode
+# No wallet needed since database is now configured for TLS-only (not mTLS)
+dsn = os.getenv('ORACLE_DSN')
 
 def get_db_connection():
     """Create and return a database connection"""
     try:
+        # Connect using TLS (one-way) - wallet parameters removed
         connection = oracledb.connect(
             user=username,
             password=password,
-            dsn=dsn,
-            config_dir=wallet_location,
-            wallet_location=wallet_location,
-            wallet_password=wallet_password
+            dsn=dsn
         )
         return connection
     except oracledb.Error as error:

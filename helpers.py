@@ -58,10 +58,10 @@ def refresh_strava_token(refresh_token, CLIENT_ID, CLIENT_SECRET):
         )
         
         access_token = token_response['access_token']
-        new_refresh_token = token_response['refresh_token']
         expires_at = datetime.fromtimestamp(token_response['expires_at'])
         
-        return access_token, new_refresh_token, expires_at
+        # Refresh token stays the same with Strava
+        return access_token, expires_at
     except Exception as e:
         print(f"Error refreshing token: {e}")
         raise
@@ -94,47 +94,31 @@ def get_valid_strava_client(athlete, CLIENT_ID, CLIENT_SECRET):
         return Client(access_token=athlete['access_token'])
 
 
-def fetch_activities(athlete, after_epoch, before_epoch):
+def fetch_activities(athlete, after_epoch, before_epoch, page):
     
-    # Fetch activities from Strava API using raw HTTP requests
-    all_activities = []
-    page = 1
-    has_more = True
+    # Fetch one page of activities from Strava API
     
-    while has_more:
-        # Add a cache-busting parameter using current timestamp
-        nocache = int(time.time() * 1000)  # Current time in milliseconds
-        
-        # Make the API call
-        url = f"https://www.strava.com/api/v3/athlete/activities?after={after_epoch}&before={before_epoch}&page={page}&per_page=200&nocache={nocache}"
-        
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {athlete["access_token"]}'
-        }
-        
-        try:
-            response = requests.get(url, headers=headers)
-            
-            # Check if the response is successful (status code 200-299)
-            if not response.ok:
-                print(f"Error: Response status {response.status_code}")
-                raise Exception(f'Network response was not ok: {response.status_code}')
-            
-            # Parse the response body as JSON
-            activities = response.json()
-            
-            # If there are activities in the response, add them to the allActivities array
-            if len(activities) > 0:
-                print(f"Fetched page {page} with {len(activities)} activities")
-                all_activities.extend(activities)
-                page += 1  # Increment the page number for the next request
-            else:
-                print("All activities fetched")
-                has_more = False  # No more activities to fetch
-                
-        except Exception as e:
-            print(f"Error fetching activities: {e}")
-            raise
+    # Make the API call (page 1, up to 200 activities)
+    url = f"https://www.strava.com/api/v3/athlete/activities?after={after_epoch}&before={before_epoch}&page={page}&per_page=200"
     
-    return all_activities
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {athlete["access_token"]}'
+    }
+    
+    try:
+        response = requests.get(url, headers=headers)
+        
+        # Check if the response is successful (status code 200-299)
+        if not response.ok:
+            print(f"Error: Response status {response.status_code}")
+            return []  # Return empty array on error
+        
+        # Parse the response body as JSON
+        activities = response.json()
+        print(f"Fetched {len(activities)} activities")
+        return activities
+        
+    except Exception as e:
+        print(f"Error fetching activities: {e}")
+        return []  # Return empty array on exception

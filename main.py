@@ -178,11 +178,16 @@ def get_activities():
         logger.info("Get activities request received")
         after = request.args.get('after')
         before = request.args.get('before')
+        page = request.args.get('page')
         logger.debug(f"Query parameters - after: {after}, before: {before}")
         
         if before is None or after is None:
             logger.warning("Missing date parameters in request")
             return jsonify({"msg": "Missing start or end date in request"}), 400 # 400 Bad Request
+
+        if page is None:
+            logger.warning("Missing page parameter in request")
+            return jsonify({"msg": "Missing page parameter in activities request"}), 400 # 400 Bad Request
         
         user = get_jwt_identity()
         logger.debug(f"User identity: {user}")
@@ -197,11 +202,18 @@ def get_activities():
         
         if expires_at <= now:
             # Token is expired, refresh it
-            new_access_token, new_refresh_token, new_expires_at = h.refresh_strava_token(
+            logger.info("Access token expired, refreshing...")
+            new_access_token, new_expires_at = h.refresh_strava_token(
                 athlete['refresh_token'], CLIENT_ID, CLIENT_SECRET
             )
+            # Update database with new access token (refresh token stays the same)
+            db.update_athlete_tokens(user["id"], new_access_token, athlete['refresh_token'], new_expires_at)
+            # Update athlete dict with new access token for this request
+            athlete['access_token'] = new_access_token
+            athlete['expires_at'] = new_expires_at
+            logger.info("Access token refreshed successfully")
 
-        activities_list = h.fetch_activities(athlete, after, before)
+        activities_list = h.fetch_activities(athlete, after, before, page=page)
         
         logger.info(f"Successfully fetched {len(activities_list)} activities")
         return jsonify({

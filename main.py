@@ -35,8 +35,21 @@ CORS(app, resources={r"/*": {"origins": FRONTEND_URL}},
 app.config['JWT_SECRET_KEY'] = JWT_SECRET
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_COOKIE_SECURE"] = SECURE
-app.config["JWT_COOKIE_SAMESITE"] = "None"  # Allow cross-site cookie sending
+
+# SameSite=None requires Secure=True in modern browsers
+# For local dev (HTTP), use Lax; for production (HTTPS), use None for cross-origin
+SAMESITE_SETTING = "None" if SECURE else "Lax"
+
+app.config["JWT_COOKIE_SAMESITE"] = SAMESITE_SETTING
 app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Keep CSRF protection enabled
+
+# CSRF Cookie Configuration - must match JWT cookie settings
+app.config["JWT_CSRF_IN_COOKIES"] = True
+app.config["JWT_CSRF_CHECK_FORM"] = False  # Only check headers
+app.config["JWT_ACCESS_CSRF_COOKIE_NAME"] = "csrf_access_token"
+app.config["JWT_ACCESS_CSRF_COOKIE_PATH"] = "/"
+app.config["JWT_ACCESS_CSRF_COOKIE_SAMESITE"] = SAMESITE_SETTING  # Must match JWT cookie
+app.config["JWT_ACCESS_CSRF_COOKIE_SECURE"] = SECURE  # Must match JWT cookie
 
 jwt = JWTManager(app)
 

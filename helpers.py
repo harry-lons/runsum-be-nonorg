@@ -112,7 +112,6 @@ def fetch_activities(athlete, after_epoch, before_epoch):
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {athlete["access_token"]}'
         }
-        print(athlete["access_token"])
         
         try:
             response = requests.get(url, headers=headers)

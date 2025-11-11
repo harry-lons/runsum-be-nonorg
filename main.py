@@ -35,6 +35,8 @@ CORS(app, resources={r"/*": {"origins": FRONTEND_URL}},
 app.config['JWT_SECRET_KEY'] = JWT_SECRET
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_COOKIE_SECURE"] = SECURE
+app.config["JWT_COOKIE_SAMESITE"] = "None"  # Allow cross-site cookie sending
+app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Keep CSRF protection enabled
 
 jwt = JWTManager(app)
 

@@ -248,6 +248,7 @@ def get_activities():
             logger.info("Access token refreshed successfully")
 
         activities_list = h.fetch_activities(athlete, after, before, page=page)
+        h.log_query(athlete["id"], after, before)
         
         logger.info(f"Successfully fetched {len(activities_list)} activities")
         return jsonify({

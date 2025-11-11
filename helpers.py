@@ -32,11 +32,15 @@ def log_query(athlete_id, start_date, end_date):
     
     try:
         now = datetime.now()
+        # Convert Unix timestamps to datetime objects (handle string or int)
+        start_datetime = datetime.fromtimestamp(int(start_date))
+        end_datetime = datetime.fromtimestamp(int(end_date))
+        
         cursor.execute("""
             INSERT INTO queries 
             (athlete_id, querytime, startdate, enddate)
             VALUES (:athlete_id, :querytime, :startdate, :enddate)
-        """, [athlete_id, now, start_date, end_date])
+        """, [athlete_id, now, start_datetime, end_datetime])
         
         connection.commit()
         return True

@@ -55,6 +55,11 @@ SAMESITE_SETTING = "None" if SECURE else "Lax"
 app.config["JWT_COOKIE_SAMESITE"] = SAMESITE_SETTING
 app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Keep CSRF protection enabled
 
+# Cookie Domain - set to .harrylons.com to work across subdomains in production
+# For local dev, None (default) is fine
+COOKIE_DOMAIN = ".harrylons.com" if SECURE else None
+app.config["JWT_COOKIE_DOMAIN"] = COOKIE_DOMAIN
+
 # CSRF Cookie Configuration - must match JWT cookie settings
 app.config["JWT_CSRF_IN_COOKIES"] = True
 app.config["JWT_CSRF_CHECK_FORM"] = False  # Only check headers
@@ -62,6 +67,7 @@ app.config["JWT_ACCESS_CSRF_COOKIE_NAME"] = "csrf_access_token"
 app.config["JWT_ACCESS_CSRF_COOKIE_PATH"] = "/"
 app.config["JWT_ACCESS_CSRF_COOKIE_SAMESITE"] = SAMESITE_SETTING  # Must match JWT cookie
 app.config["JWT_ACCESS_CSRF_COOKIE_SECURE"] = SECURE  # Must match JWT cookie
+app.config["JWT_ACCESS_CSRF_COOKIE_DOMAIN"] = COOKIE_DOMAIN  # Must match JWT cookie
 
 jwt = JWTManager(app)
 

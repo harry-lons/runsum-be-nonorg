@@ -26,8 +26,10 @@ logging.basicConfig(
 
 app = Flask(__name__)
 
-# Enable CORS
-CORS(app, resources={r"/*": {"origins": FRONTEND_URL}}, 
+# Enable CORS - simplified for same-origin deployment
+# When both frontend and backend are on runsum.harrylons.com, CORS is minimal
+# Still allow FRONTEND_URL for backward compatibility during transition
+CORS(app, resources={r"/*": {"origins": [FRONTEND_URL, "https://runsum.harrylons.com", "http://localhost:3010"]}}, 
      supports_credentials=True,
      expose_headers=['Set-Cookie'])
 
@@ -36,7 +38,8 @@ CORS(app, resources={r"/*": {"origins": FRONTEND_URL}},
 def after_request(response):
     """Ensure CORS headers are present on all responses, including errors and redirects"""
     origin = request.headers.get('Origin')
-    if origin == FRONTEND_URL:
+    allowed_origins = [FRONTEND_URL, "https://runsum.harrylons.com", "http://localhost:3010"]
+    if origin in allowed_origins:
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,X-CSRF-TOKEN'
@@ -48,9 +51,9 @@ app.config['JWT_SECRET_KEY'] = JWT_SECRET
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_COOKIE_SECURE"] = SECURE
 
-# SameSite=None requires Secure=True in modern browsers
-# For local dev (HTTP), use Lax; for production (HTTPS), use None for cross-origin
-SAMESITE_SETTING = "None" if SECURE else "Lax"
+# For same-origin deployment (frontend and backend on same domain), use Lax
+# This is more secure and works better with mobile browsers
+SAMESITE_SETTING = "Lax"
 
 app.config["JWT_COOKIE_SAMESITE"] = SAMESITE_SETTING
 app.config["JWT_COOKIE_CSRF_PROTECT"] = True  # Keep CSRF protection enabled
@@ -89,7 +92,7 @@ auth_client = Client()
 def home():
     return "Hello HTTPS!"
 
-@app.route("/health")
+@app.route("/api/health")
 def health_check():
     """Lightweight health check endpoint for uptime monitoring"""
     return {"status": "ok", "service": "runsum-backend"}, 200
@@ -98,7 +101,7 @@ def health_check():
 # AUTH ROUTES #
 ###############
 
-@app.route("/auth/login", methods=['POST'])
+@app.route("/api/auth/login", methods=['POST'])
 def authenticate_me():
     try:
         logger.info("Login attempt received")
@@ -157,7 +160,7 @@ def authenticate_me():
         logger.error(f"Authentication failed: {str(e)}", exc_info=True)
         return jsonify({"error": "Failed to authenticate"}), 500
     
-@app.route('/auth/logout', methods=['POST'])
+@app.route('/api/auth/logout', methods=['POST'])
 def logout_with_cookies():
     logger.info("Logout request received")
     response = jsonify({"msg": "logout successful"})
@@ -165,7 +168,7 @@ def logout_with_cookies():
     logger.info("Logout successful")
     return response
     
-@app.route('/auth/whoami', methods=['GET'])
+@app.route('/api/auth/whoami', methods=['GET'])
 @jwt_required()
 def who_am_i():
     try:
@@ -196,7 +199,7 @@ def who_am_i():
 ##############
 # ACTIVITIES #
 ##############
-@app.route('/activities', methods=['GET'])
+@app.route('/api/activities', methods=['GET'])
 @jwt_required()
 def get_activities():
     try:

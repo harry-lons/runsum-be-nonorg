@@ -171,6 +171,35 @@ def logout_with_cookies():
     logger.info("Logout request received")
     response = jsonify({"msg": "logout successful"})
     unset_jwt_cookies(response)
+    
+    # Manually clear cookies with explicit domain settings for production
+    # This ensures cookies are properly cleared with the same domain they were set with
+    if COOKIE_DOMAIN:
+        # Clear the JWT access token cookie
+        response.set_cookie(
+            'access_token_cookie',
+            value='',
+            max_age=0,
+            expires=0,
+            path='/',
+            domain=COOKIE_DOMAIN,
+            secure=SECURE,
+            httponly=True,
+            samesite=SAMESITE_SETTING
+        )
+        # Clear the CSRF token cookie
+        response.set_cookie(
+            'csrf_access_token',
+            value='',
+            max_age=0,
+            expires=0,
+            path='/',
+            domain=COOKIE_DOMAIN,
+            secure=SECURE,
+            httponly=False,  # CSRF tokens are not httponly
+            samesite=SAMESITE_SETTING
+        )
+    
     logger.info("Logout successful")
     return response
     

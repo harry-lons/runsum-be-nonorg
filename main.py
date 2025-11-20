@@ -9,6 +9,7 @@ from db import db_utils as db
 import os
 import logging
 import argparse
+import time
 
 load_dotenv()
 CLIENT_ID = os.getenv('CLIENT_ID')
@@ -237,8 +238,9 @@ def who_am_i():
 @app.route('/api/activities', methods=['GET'])
 @jwt_required()
 def get_activities():
+    request_start = time.time()
     try:
-        logger.info("Get activities request received")
+        logger.info(f"[TIMING] Get activities request received - Page {request.args.get('page')}")
         after = request.args.get('after')
         before = request.args.get('before')
         page = request.args.get('page')
@@ -252,9 +254,12 @@ def get_activities():
             logger.warning("Missing page parameter in request")
             return jsonify({"msg": "Missing page parameter in activities request"}), 400 # 400 Bad Request
         
+        db_start = time.time()
         user = get_jwt_identity()
         logger.debug(f"User identity: {user}")
         athlete = db.get_athlete_by_id(user["id"])
+        db_duration = (time.time() - db_start) * 1000
+        logger.info(f"[TIMING] Database lookup: {db_duration:.2f}ms")
         
         if not athlete:
             logger.warning(f"User not found in database (ID: {user['id']})")
@@ -266,6 +271,7 @@ def get_activities():
         if expires_at <= now:
             # Token is expired, refresh it
             logger.info("Access token expired, refreshing...")
+            token_refresh_start = time.time()
             new_access_token, new_expires_at = h.refresh_strava_token(
                 athlete['refresh_token'], CLIENT_ID, CLIENT_SECRET
             )
@@ -274,18 +280,29 @@ def get_activities():
             # Update athlete dict with new access token for this request
             athlete['access_token'] = new_access_token
             athlete['expires_at'] = new_expires_at
-            logger.info("Access token refreshed successfully")
+            token_refresh_duration = (time.time() - token_refresh_start) * 1000
+            logger.info(f"[TIMING] Token refresh: {token_refresh_duration:.2f}ms")
 
+        fetch_start = time.time()
         activities_list = h.fetch_activities(athlete, after, before, page=page)
+        fetch_duration = (time.time() - fetch_start) * 1000
+        logger.info(f"[TIMING] Total fetch_activities call: {fetch_duration:.2f}ms")
         
         h.log_query(athlete["strava_id"], after, before)
         
-        logger.info(f"Successfully fetched {len(activities_list)} activities")
-        return jsonify({
+        json_start = time.time()
+        response_data = jsonify({
             "activities": activities_list,
             "count": len(activities_list),
             "success": True
-        }), 200
+        })
+        json_duration = (time.time() - json_start) * 1000
+        logger.info(f"[TIMING] JSON serialization: {json_duration:.2f}ms")
+        
+        total_duration = (time.time() - request_start) * 1000
+        logger.info(f"[TIMING] Total endpoint time (page {page}): {total_duration:.2f}ms - Returned {len(activities_list)} activities")
+        
+        return response_data, 200
     
     except Exception as e:
         logger.error(f"Failed to fetch activities: {str(e)}", exc_info=True)

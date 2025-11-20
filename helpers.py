@@ -111,16 +111,26 @@ def fetch_activities(athlete, after_epoch, before_epoch, page):
     }
     
     try:
+        # Time the Strava API call
+        strava_start = time.time()
         response = requests.get(url, headers=headers)
+        strava_end = time.time()
+        strava_duration = (strava_end - strava_start) * 1000  # Convert to milliseconds
+        
+        print(f"[TIMING] Strava API call (page {page}): {strava_duration:.2f}ms")
         
         # Check if the response is successful (status code 200-299)
         if not response.ok:
             print(f"Error: Response status {response.status_code}")
             return []  # Return empty array on error
         
-        # Parse the response body as JSON
+        # Time JSON parsing
+        parse_start = time.time()
         activities = response.json()
-        print(f"Fetched {len(activities)} activities")
+        parse_end = time.time()
+        parse_duration = (parse_end - parse_start) * 1000
+        
+        print(f"[TIMING] JSON parsing (page {page}): {parse_duration:.2f}ms - Fetched {len(activities)} activities")
         return activities
         
     except Exception as e:
